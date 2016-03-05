@@ -13,6 +13,8 @@ postulate
               -> ⟦ (stopᵉ ▷ varᵛ fzero) / quoteᵛ (ren (keep top) x) ⟧ᵛ ≡ x
 
 {-# REWRITE eval-quoteᵛ #-}
+-- We need this only because of the `δᵗ' constructor.
+-- But we would also need it if we allow lambdas to carry types in raw terms.
 {-# REWRITE instᵏ-abstᵏ #-}
 
 private
@@ -45,6 +47,8 @@ data _⊢_∈_ {n} (Γ : Con {Value} n) : Term n -> Value n -> Set where
             -> Γ     ⊢ quoteᵛ σ ∈ typeᵛ
             -> Γ ▻ σ ⊢ b        ∈ instᵏ τₖ
             -> Γ     ⊢ ƛ b      ∈ piᵛ σ τₖ
+-- Works too, but I prefer the other version, because it allows to
+-- postpone the use of the `instᵏ-abstᵏ' rewrite rule.
 --   δᵗ        : ∀ {x} {σₖ : Kripke n}
 --             -> Γ ▻ intᵛ ⊢ x   ∈ instᵏ σₖ
 --             -> Γ        ⊢ δ x ∈ pathᵛ σₖ ⟦ x ⟧⟦ l ⟧ ⟦ x ⟧⟦ r ⟧
@@ -66,26 +70,22 @@ data _⊢_∈_ {n} (Γ : Con {Value} n) : Term n -> Value n -> Set where
             -> Γ        ⊢ x         ∈ ⟦ σ ⟧⟦ l ⟧
             -> Γ        ⊢ j         ∈ intᵛ
             -> Γ        ⊢ coe σ x j ∈ ⟦ σ ⟧⟦ j ⟧
-  quote-coe : ∀ {σ τ x} -> quoteᵛ σ ≡ quoteᵛ τ -> Γ ⊢ x ∈ σ -> Γ ⊢ x ∈ τ
+  qcoerceᵗ  : ∀ {σ τ x} -> quoteᵛ σ ≡ quoteᵛ τ -> Γ ⊢ x ∈ σ -> Γ ⊢ x ∈ τ
+
+postulate
+  shiftᵗ : ∀ {n σ τ} {Γ : Con n} x -> Γ ⊢ quoteᵛ x ∈ σ -> Γ ▻ τ ⊢ quoteᵛ (shift x) ∈ shift σ
+  _[_]ᵗ  : ∀ {n σ τ x y} {Γ : Con n} -> Γ ▻ σ ⊢ y ∈ τ -> Γ ⊢ x ∈ σ -> Γ ⊢ y [ x ] ∈ τ ⟦ x ⟧ᵛ
 
 data ⊢*_ : ∀ {n} -> Con n -> Set where
   ø   : ⊢* ε
   _▷_ : ∀ {n σ} {Γ : Con n} -> ⊢* Γ -> Γ ⊢ quoteᵛ σ ∈ typeᵛ -> ⊢* Γ ▻ σ
 
-coerce : ∀ {n σ τ t} {Γ : Con n} -> Γ ⊢ t ∈ σ -> Maybe (Γ ⊢ t ∈ τ)
-coerce {σ = σ} {τ} t⁺ = flip quote-coe t⁺ <$> quoteᵛ σ ≟ quoteᵛ τ
+coerceᵗ : ∀ {n σ τ t} {Γ : Con n} -> Γ ⊢ t ∈ σ -> Maybe (Γ ⊢ t ∈ τ)
+coerceᵗ {σ = σ} {τ} t⁺ = flip qcoerceᵗ t⁺ <$> quoteᵛ σ ≟ quoteᵛ τ
 
--- ren*
-
-shift* : ∀ {n} {σ τ} {Γ : Con n} x -> Γ ⊢ quoteᵛ x ∈ σ -> Γ ▻ τ ⊢ quoteᵛ (shift x) ∈ shift σ
-shift* = {!!}
-
-lookup* : ∀ {n} {Γ : Con n} -> (v : Fin n) -> ⊢* Γ -> Γ ⊢ quoteᵛ (lookupᶜ v Γ) ∈ typeᵛ
-lookup* {Γ = Γ ▻ σ}  fzero   (ρ ▷ t) = shift* σ t
-lookup* {Γ = Γ ▻ σ} (fsuc i) (ρ ▷ t) = shift* (lookupᶜ i Γ) (lookup* i ρ)
-
-_[_]ᵗ : ∀ {n σ τ x y} {Γ : Con n} -> Γ ▻ σ ⊢ y ∈ τ -> Γ ⊢ x ∈ σ -> Γ ⊢ y [ x ] ∈ τ ⟦ x ⟧ᵛ
-_[_]ᵗ = {!!}
+lookupᵗ : ∀ {n} {Γ : Con n} -> (v : Fin n) -> ⊢* Γ -> Γ ⊢ quoteᵛ (lookupᶜ v Γ) ∈ typeᵛ
+lookupᵗ {Γ = Γ ▻ σ}  fzero   (ρ ▷ t) = shiftᵗ σ t
+lookupᵗ {Γ = Γ ▻ σ} (fsuc i) (ρ ▷ t) = shiftᵗ (lookupᶜ i Γ) (lookupᵗ i ρ)
 
 -- Holds definitionally:
 -- quoteᵛ (instᵏ k) [ x ]
@@ -100,9 +100,6 @@ _[_]ᵗ = {!!}
 --          -> Γ ⊢ x ∈ σ
 --          -> Γ ⊢ quoteᵛ (k ⟦ x ⟧ᵏ) ∈ τ ⟦ x ⟧ᵛ
 -- k /ᵏ b [ x ]ᵗ = b [ x ]ᵗ
-
-generalize : ∀ {α β} {A : Set α} {x} -> (B : A -> Set β) -> B x -> ∃ λ x' -> B x' × x ≡ x'
-generalize B y = , y , refl
 
 -- Subject reduction.
 -- normᵗ : ∀ {n x σ} {Γ : Con n} -> Γ ⊢ x ∈ σ -> Γ ⊢ norm x ∈ σ
@@ -128,10 +125,10 @@ mutual
        ⊛   check ρ x₂ (σₜ [ rᵗ ]ᵗ)
   infer ρ (l               ) = just (, lᵗ , intᵗ)
   infer ρ (r               ) = just (, rᵗ , intᵗ)
-  infer ρ (var v           ) = just (, varᵗ v , lookup* v ρ)
+  infer ρ (var v           ) = just (, varᵗ v , lookupᵗ v ρ)
   infer ρ (ƛ b             ) = nothing
   infer ρ (δ x             ) =
-    (λ{ (σ , xₜ , σₜ) -> , δᵗ xₜ , pathᵗ σₜ (xₜ [ lᵗ ]ᵗ) (xₜ [ rᵗ ]ᵗ) }) <$> infer (ρ ▷ intᵗ) x
+    (λ{ (σ , xₜ , σₜ) -> , δᵗ xₜ , pathᵗ σₜ (xₜ [ lᵗ ]ᵗ) (xₜ [ rᵗ ]ᵗ) }) <$> infer (ρ ▷ intᵗ) x  
   infer ρ (f · x           ) = infer ρ f >>= λ
     { (piᵛ σ τₖ , fₜ , πᵗ σₜ τₜ) -> (λ xₜ -> , fₜ ·ᵗ xₜ , τₜ [ xₜ ]ᵗ) <$> check ρ x σₜ
     ;  _                         -> nothing
@@ -139,7 +136,7 @@ mutual
   infer ρ (p #⟨ x₁ , x₂ ⟩ i) = infer ρ p >>= λ
     { (pathᵛ σₖ xᵥ₁ xᵥ₂ , pₜ , pathᵗ σₜ xₜ₁ xₜ₂) ->
           (λ pₜ′ xₜ₁′ xₜ₂′ iₜ -> σₖ ⟦ i ⟧ᵏ , pₜ′ #⟨ xₜ₁′ , xₜ₂′ ⟩ᵗ iₜ , σₜ [ iₜ ]ᵗ)
-        <$> coerce {τ = pathᵛ σₖ (eval x₁) (eval x₂)} pₜ
+        <$> coerceᵗ {τ = pathᵛ σₖ (eval x₁) (eval x₂)} pₜ
          ⊛  check ρ x₁ (σₜ [ lᵗ ]ᵗ)
          ⊛  check ρ x₂ (σₜ [ rᵗ ]ᵗ)
          ⊛  check ρ i   intᵗ
@@ -152,7 +149,7 @@ mutual
   check : ∀ {n σ} {Γ : Con n} -> ⊢* Γ -> (t : Term n) -> Γ ⊢ quoteᵛ σ ∈ typeᵛ -> Maybe (Γ ⊢ t ∈ σ)
   check {σ = σ       } {Γ} ρ  t    σₜ with generalize (Γ ⊢ quoteᵛ σ ∈_) σₜ
   check {σ = piᵛ σ τₖ}     ρ (ƛ b) _  | , πᵗ σₜ τₜ , refl = ƛᵗ σₜ <$> check (ρ ▷ σₜ) b τₜ
-  check                    ρ  t    σₜ | _                 = infer ρ t >>= coerce ∘ proj₁ ∘ proj₂
+  check                    ρ  t    σₜ | _                 = infer ρ t >>= coerceᵗ ∘ proj₁ ∘ proj₂
 
 typecheck : ∀ t σ -> Maybe (ε ⊢ t ∈ᵗ σ)
 typecheck t σ = check ø (quoteᵛ σ) typeᵗ >>= λ σₜ -> (_, σₜ) <$> check ø t σₜ

@@ -42,6 +42,7 @@ module Kripke (Fam : ℕ -> Set) where
 
 record Context (Fam : ℕ -> Set) : Set where
   infixl 5 _▻_
+  infix 4 _⊑ᶜ_
 
   field ren : Renames Fam
 
@@ -59,6 +60,17 @@ record Context (Fam : ℕ -> Set) : Set where
   slookupᶜ : ∀ {n} -> (i : Fin n) -> Con n -> Fam (revert i)
   slookupᶜ  fzero   (Γ ▻ t) = t
   slookupᶜ (fsuc v) (Γ ▻ t) = slookupᶜ v Γ
+
+  mutual
+    data _⊑ᶜ_ : ∀ {n m} -> Con n -> Con m -> Set where
+      stopᶜ : ∀ {n}     {Γ : Con n}             ->      Γ ⊑ᶜ Γ
+      skipᶜ : ∀ {n m σ} {Γ : Con n} {Δ : Con m} ->      Γ ⊑ᶜ Δ  -> Γ     ⊑ᶜ Δ ▻ σ
+      keepᶜ : ∀ {n m σ} {Γ : Con n} {Δ : Con m} -> (ι : Γ ⊑ᶜ Δ) -> Γ ▻ σ ⊑ᶜ Δ ▻ ren (eraseᶜ ι) σ
+
+    eraseᶜ : ∀ {n m} {Γ : Con n} {Δ : Con m} -> Γ ⊑ᶜ Δ -> n ⊑ m
+    eraseᶜ  stopᶜ    = stop
+    eraseᶜ (skipᶜ ι) = skip (eraseᶜ ι)
+    eraseᶜ (keepᶜ ι) = keep (eraseᶜ ι)
 open Context {{...}} public
 
 Unrenames : (ℕ -> Set) -> Set

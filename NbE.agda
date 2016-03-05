@@ -12,7 +12,14 @@ infixl 8 _[_]ᵛ _⟦_⟧ᵛ _⟦_⟧ᵏ _[_]
   ;  _              -> ƛ b
   }
 
--- ηδ
+-- Is it safe to ignore `x₁' and `x₂'?
+-- Even if it is, throwing `x₁' and `x₂' away allows them to be ill-typed, which is silly.
+-- Do we need to define normalization mutually with type checking?
+ηδ : ∀ {n} -> Term (suc n) -> Term n
+ηδ b = case b of λ
+  { (p #⟨ x₁ , x₂ ⟩ var fzero) -> maybe′ id (δ b) (unshift p)
+  ;  _                         -> δ b
+  }
 
 mutual
   quoteᵛ : Value ∸> Term
@@ -24,7 +31,7 @@ mutual
   quoteᵛ  rᵛ                 = r
   quoteᵛ (varᵛ v)            = var v
   quoteᵛ (lamᵛ bₖ)           = ηƛ (quoteᵏ bₖ)
-  quoteᵛ (dimᵛ xₖ)           = δ (quoteᵏ xₖ)
+  quoteᵛ (dimᵛ xₖ)           = ηδ (quoteᵏ xₖ)
   quoteᵛ (f ·ᵛ x)            = quoteᵛ f · quoteᵛ x
   quoteᵛ (p #⟨ x₁ , x₂ ⟩ᵛ i) = quoteᵛ p #⟨ quoteᵛ x₁ , quoteᵛ x₂ ⟩ quoteᵛ i
   quoteᵛ (coeᵛ Aₖ x j)       = coe (quoteᵏ Aₖ) (quoteᵛ x) (quoteᵛ j)
@@ -70,7 +77,7 @@ mutual
   ⟦ ρ / b ⟧ᵏ ι x = ⟦ renᵉ ι ρ ▷ x / b ⟧ᵛ
 
 eval : Term ∸> Value
-eval t = ⟦ stopᵉ / t ⟧ᵛ
+eval = ⟦ stopᵉ /_⟧ᵛ
 
 norm : Term ∸> Term
 norm = quoteᵛ ∘ eval
