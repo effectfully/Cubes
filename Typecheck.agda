@@ -144,7 +144,7 @@ mutual
          ⊛  check ρ x₂ (σₜ [ rᵗ ]ᵗ)
          ⊛  check ρ i   intᵗ
     ;  _                                         -> nothing
-    } where
+    }
   infer ρ (coe σ x j       ) =
     check (ρ ▷ intᵗ) σ typeᵗ >>= λ σₜ ->
       (λ xₜ jₜ -> , coeᵗ σₜ xₜ jₜ , σₜ [ jₜ ]ᵗ) <$> check ρ x (σₜ [ lᵗ ]ᵗ) ⊛ check ρ j intᵗ

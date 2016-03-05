@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module Cubes.Structures where
 
 open import Cubes.Prelude public
@@ -106,36 +104,3 @@ record Environment Fam {{context : Context Fam}} : Set where
   stopᵉ {0}     = ø
   stopᵉ {suc n} = keepᵉ stopᵉ
 open Environment {{...}} public
-
-
-
-
-
-
--- {-# BUILTIN REWRITE _≡_ #-}
-
--- {-record Abstractable (Fam : ℕ -> Set) : Set where
---   open Kripke Fam
-
---   field abstᵏ : ∀ {n} -> Fam (suc n) -> Kripke n
-
---   postulate instᵏ-abstᵏ : ∀ {{c : Context Fam}} {{_ : Environment Fam}} {n}
---                         -> {t : Fam (suc n)} -> abstᵏ t top fresh ≡ t
-
---   {-# REWRITE instᵏ-abstᵏ #-}
--- open Abstractable {{...}} public-}
-
--- {-data Abstractable (Fam : ℕ -> Set) : Set where
---   abstᵏ : let open Kripke Fam in
---             (∀ {n} -> Fam (suc n) -> Kripke n) -> Abstractable Fam
-
--- unabst : ∀ {Fam} -> Abstractable Fam -> let open Kripke Fam in
---             ∀ {n} -> Fam (suc n) -> Kripke n
--- unabst (abstᵏ k) = k
-
--- postulate
---   instᵏ-abstᵏ : ∀ {Fam} {{c : Context Fam}} {{_ : Environment Fam}} {{v : Abstractable Fam}} {n}
---               -> {t : Fam (suc n)} -> unabst v t top fresh ≡ t
-
--- {-# REWRITE instᵏ-abstᵏ #-}-}
--- -- open Abstractable {{...}} public
