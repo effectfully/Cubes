@@ -2,6 +2,7 @@ module Cubes.Prelude where
 
 open import Function public
 open import Relation.Binary.PropositionalEquality hiding ([_]) public
+open import Data.Unit.Base using (⊤; tt) public
 open import Data.Bool.Base hiding (_≟_) public
 open import Data.Nat.Base  hiding (_≟_; _⊔_) public
 open import Data.Fin renaming (zero to fzero; suc to fsuc) using (Fin) public
@@ -17,6 +18,8 @@ private open module Dummy {α} = RawMonad {α} Maybe.monad hiding (pure; zipWith
 
 infix 4 ,_
 pattern ,_ y = _ , y
+
+infixl 1 _>>=ᵀ_ _>>ᵀ_ _>>=ᵗ_
 
 _∸>_ : ∀ {ι α β} {I : Set ι} -> (I -> Set α) -> (I -> Set β) -> Set (ι ⊔ α ⊔ β)
 A ∸> B = ∀ {i} -> A i -> B i
@@ -37,6 +40,17 @@ cong₄ f refl refl refl refl = refl
 revert : ∀ {n} -> Fin n -> ℕ
 revert {suc n}  fzero   = n
 revert {suc n} (fsuc i) = revert i
+
+_>>=ᵀ_ : ∀ {α β} {A : Set α} -> Maybe A -> (A -> Set β) -> Set β
+nothing >>=ᵀ B = Lift ⊤
+just x  >>=ᵀ B = B x
+
+_>>ᵀ_ : ∀ {α β} {A : Set α} -> Maybe A -> Set β -> Set β
+a >>ᵀ B = a >>=ᵀ λ _ -> B
+
+_>>=ᵗ_ : ∀ {α β} {A : Set α} {B : A -> Set β} mx -> (∀ x -> B x) -> mx >>=ᵀ B
+nothing >>=ᵗ f = _
+just x  >>=ᵗ f = f x
 
 MEquates : ∀ {α} -> Set α -> Set α
 MEquates A = (x y : A) -> Maybe (x ≡ y)
