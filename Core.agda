@@ -6,7 +6,7 @@ open import Cubes.Structures public
 
 infixr 3 ƛ_ δ_
 infixl 6 _·_ _#_ _·ᵛ_ _#ᵛ_ _$ᵛ_
-infixr 2 _~>_
+infixr 2 _⇒_
 
 mutual
   Type = Term
@@ -140,8 +140,8 @@ Term⁽⁾ = Term 0
 Type⁺  = Term⁺
 Type⁽⁾ = Term⁽⁾
 
-_~>_ : ∀ {n} -> Term n -> Term n -> Term n
-σ ~> τ = π σ (shift τ)
+_⇒_ : ∀ {n} -> Term n -> Term n -> Term n
+σ ⇒ τ = π σ (shift τ)
 
 wk : ∀ {n m} -> Term n -> Term (n + m)
 wk  int           = int
@@ -172,7 +172,10 @@ lam      zero   b = b
 lam {n} (suc m) b = ƛ (lam m (instᵇ b))
 
 dim : ∀ {n} -> Bind n 1 -> Term n
-dim {n} x = δ (instᵇ x) 
+dim = δ_ ∘ instᵇ
+
+bcoe : ∀ {n} -> Bind n 1 -> Term n -> Term n -> Term n
+bcoe = coe ∘ instᵇ
 
 lift : Term⁽⁾ -> Term⁺
 lift t = wk t

@@ -1,6 +1,6 @@
 module Cubes.Prelude where
 
-open import Function public
+open import Function hiding (_∋_) public
 open import Relation.Binary.PropositionalEquality hiding ([_]) public
 open import Data.Empty public
 open import Data.Unit.Base using (⊤; tt) public

@@ -2,7 +2,7 @@
 
 module Cubes.Typecheck where
 
-open import Cubes.Core
+open import Cubes.Core public
 
 infix  4 _⊢_∈_
 infixl 8 _⟦_⟧ᵏ
@@ -118,8 +118,8 @@ mutual
            <$>  coerceᵗ {τ = pathᵛ σₖ (eval xₜ₁) (eval xₜ₂)} pₜ
     ;  _                      -> nothing
     }
-  infer (coe σ j x)    = check σ typeᵛ >>= λ σₜ -> check j intᵛ >>= λ jₜ ->
-    (λ xₜ -> , coeᵗ σₜ jₜ xₜ) <$> check x ⟦ σₜ ⟧[ lᵛ ]
+  infer (coe σ j x)    =
+    check σ typeᵛ >>= λ σₜ -> (λ jₜ xₜ -> , coeᵗ σₜ jₜ xₜ) <$> check j intᵛ ⊛ check x ⟦ σₜ ⟧[ lᵛ ]
 
   check : ∀ {n} {Γ : Con n} t σ -> Maybe (Γ ⊢ t ∈ σ)
   check (ƛ b) (piᵛ σ τₖ)         = ƛᵗ <$> check b (instᵏ τₖ)
@@ -129,8 +129,8 @@ mutual
 check₀ : ∀ t σ -> Maybe (ε ⊢ t ∈ σ)
 check₀ = check
 
-typecheck : ∀ t σ -> _
-typecheck t σ = check₀ σ typeᵛ >>=⊤ λ σₜ -> check₀ t (eval σₜ) >>=⊤ id
+_∋_ : ∀ σ t -> _
+σ ∋ t = check₀ σ typeᵛ >>=⊤ λ σₜ -> check₀ t (eval σₜ) >>=⊤ id
 
 _∈_ : Term⁽⁾ -> Type⁽⁾ -> Set
-t ∈ σ = recᵗ (T ∘ is-just) ⊥ $ check₀ σ typeᵛ >>=ᵗ λ σₜ -> check₀ t (eval σₜ)
+t ∈ σ = recᵗ (T ∘ is-just) ⊥ $ check₀ σ typeᵛ >>=ᵗ check₀ t ∘ eval
