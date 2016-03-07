@@ -6,7 +6,7 @@ open import Cubes.Core
 
 infix  4 _⊢_∈_
 infixl 8 _⟦_⟧ᵏ
-infix  2 _∈?_
+infix  1 _∈_
 
 mutual
   data _⊢_∈_ {n} (Γ : Con n) : Term n -> Value n -> Set where
@@ -126,8 +126,11 @@ mutual
   check (δ x) (pathᵛ σₖ xᵥ₁ xᵥ₂) = check x (instᵏ σₖ) >>= λ xₜ -> coerceᵗ (δᵗ {σₖ = σₖ} xₜ)
   check  t     σ                 = infer t >>= coerceᵗ ∘ proj₂
 
-typecheck : ∀ t σ -> check σ typeᵛ >>=ᵀ λ σₜ -> check t (eval σₜ) >>ᵀ ε ⊢ t ∈ eval σₜ
-typecheck t σ = check {Γ = ε} σ typeᵛ >>=ᵗ λ σₜ -> check t (eval σₜ) >>=ᵗ id
+check₀ : ∀ t σ -> Maybe (ε ⊢ t ∈ σ)
+check₀ = check
 
-_∈?_ : ∀ t σ -> check σ typeᵛ >>ᵀ Bool
-t ∈? σ = check {Γ = ε} σ typeᵛ >>=ᵗ λ σₜ -> is-just $ check {Γ = ε} t (eval σₜ)
+typecheck : ∀ t σ -> _
+typecheck t σ = check₀ σ typeᵛ >>=⊤ λ σₜ -> check₀ t (eval σₜ) >>=⊤ id
+
+_∈_ : Term⁽⁾ -> Type⁽⁾ -> Set
+t ∈ σ = recᵗ (T ∘ is-just) ⊥ $ check₀ σ typeᵛ >>=ᵗ λ σₜ -> check₀ t (eval σₜ)

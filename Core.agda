@@ -6,6 +6,7 @@ open import Cubes.Structures public
 
 infixr 3 ƛ_ δ_
 infixl 6 _·_ _#_ _·ᵛ_ _#ᵛ_ _$ᵛ_
+infixr 2 _~>_
 
 mutual
   Type = Term
@@ -22,12 +23,6 @@ mutual
     _·_  : Term  n      -> Term  n      -> Term n
     _#_  : Term  n      -> Term  n      -> Term n
     coe  : Term (suc n) -> Term  n      -> Term n -> Term n
-
-Term⁺ : Set
-Term⁺ = ∀ {n} -> Term n
-
-Term⁽⁾ : Set
-Term⁽⁾ = Term 0
 
 data Value n : Set
 open Kripke Value public
@@ -135,6 +130,52 @@ instance
   
   valueEnvironment : Environment Value
   valueEnvironment = record { fresh = varᵛ fzero }
+
+Term⁺ : Set
+Term⁺ = ∀ {n} -> Term n
+
+Term⁽⁾ : Set
+Term⁽⁾ = Term 0
+
+Type⁺  = Term⁺
+Type⁽⁾ = Term⁽⁾
+
+_~>_ : ∀ {n} -> Term n -> Term n -> Term n
+σ ~> τ = π σ (shift τ)
+
+wk : ∀ {n m} -> Term n -> Term (n + m)
+wk  int           = int
+wk  type          = type
+wk (π σ τ)        = π (wk σ) (wk τ)
+wk (path σ x₁ x₂) = path (wk σ) (wk x₁) (wk x₂)
+wk  l             = l
+wk  r             = r
+wk (var v)        = var (inject+ _ v)
+wk (ƛ b)          = ƛ (wk b)
+wk (δ x)          = δ (wk x)
+wk (f · x)        = wk f · wk x
+wk (p # i)        = wk p # wk i
+wk (coe σ j x)    = coe (wk σ) (wk j) (wk x)
+
+Bind : ℕ -> ℕ -> Set
+Bind n  0      = Term n
+Bind n (suc m) = (∀ {p} -> Term (suc n + p)) -> Bind (suc n) m
+
+instᵇ : ∀ {n m} -> Bind n (suc m) -> Bind (suc n) m
+instᵇ {n} b = b (var (fromℕ⁻ n))
+
+pi : ∀ {n} -> Term n -> Bind n 1 -> Term n
+pi {n} σ b = π σ (instᵇ b)
+
+lam : ∀ {n} m -> Bind n m -> Term n
+lam      zero   b = b
+lam {n} (suc m) b = ƛ (lam m (instᵇ b))
+
+dim : ∀ {n} -> Bind n 1 -> Term n
+dim {n} x = δ (instᵇ x) 
+
+lift : Term⁽⁾ -> Term⁺
+lift t = wk t
 
 ηƛ : ∀ {n} -> Term (suc n) -> Term n
 ηƛ b = case b of λ
