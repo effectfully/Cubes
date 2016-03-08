@@ -18,10 +18,10 @@ open import Category.Monad
 
 private open module Dummy {α} = RawMonad {α} Maybe.monad hiding (pure; zipWith) public
 
-infix 4 ,_
-pattern ,_ y = _ , y
-
+infix  4 ,_
 infixl 1 _>>=ᵀ_ _>>=ᵗ_
+
+pattern ,_ y = _ , y
 
 _∸>_ : ∀ {ι α β} {I : Set ι} -> (I -> Set α) -> (I -> Set β) -> Set (ι ⊔ α ⊔ β)
 A ∸> B = ∀ {i} -> A i -> B i
@@ -65,6 +65,9 @@ FamMEq : ∀ {α β} {A : Set α} -> (A -> Set β) -> Set (α ⊔ β)
 FamMEq B = ∀ {x} -> MEq (B x)
 
 instance
+  ⊥MEq : MEq ⊥
+  ⊥MEq = record { _≟_ = λ() }
+
   finMEq : FamMEq Fin
   finMEq = record { _≟_ = λ i j -> decToMaybe (i FinProp.≟ j) }
 

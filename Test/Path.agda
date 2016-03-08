@@ -1,3 +1,5 @@
+-- Under restoration.
+
 module Cubes.Test.Path where
 
 open import Cubes.Typecheck
