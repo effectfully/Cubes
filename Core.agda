@@ -97,15 +97,34 @@ module TermWith A where
   Type⁽⁾ = Term⁽⁾
   Type⁺  = Term⁺
 
+open TermWith ⊥ renaming (Term to Pure) using () public
+
 module _ {A} where
   open TermWith A
 
   infixr 2 _⇒_
 
   instance
-    termMEq : {{aMEq : MEq A}} -> FamMEq Term
+    termShow : {{aShow : Show A}} -> Fam Show Term
+    termShow = record { show = go } where
+      go : Fam Shows Term
+      go (pure x)       = show x
+      go  int           = "int"
+      go  type          = "type"
+      go (π σ τ)        = "π" |++ go σ |++| go τ
+      go (path σ x₁ x₂) = "path" |++ go σ |++ go x₁ |++| go x₂
+      go  l             = "l"
+      go  r             = "r"
+      go (var v)        = "var" |++| show v
+      go (ƛ b)          = "ƛ" |++ go b
+      go (δ x)          = "δ" |++ go x
+      go (f · x)        = go f |++| go x
+      go (p # i)        = go p |++| go i
+      go (coe σ j x)    = "coe" |++ go σ |++ go j |++| go x 
+
+    termMEq : {{aMEq : MEq A}} -> Fam MEq Term
     termMEq = record { _≟_ = go } where
-      go : FamMEquates Term
+      go : Fam MEquates Term
       go (pure x₁           ) (pure x₂           ) = cong pure <$> x₁ ≟ x₂
       go (int               ) (int               ) = just refl
       go (type              ) (type              ) = just refl
@@ -172,8 +191,11 @@ module _ {A} where
       go ι (p # i)        = _#_ <$> go ι p ⊛ go ι i
       go ι (coe σ j x)    = coe <$> go (keep ι) σ ⊛ go ι j ⊛ go ι x
   
-  termEnvironment : Environment Term
-  termEnvironment = record { fresh = var fzero }
+    termEnvironment : Environment Term
+    termEnvironment = record { fresh = var fzero }
+
+  showCode : {{aShow : Show A}} -> Fam Shows Term
+  showCode t = "`" s++ show t s++ "`"
 
   _⇒_ : ∀ {n} -> Term n -> Term n -> Term n
   σ ⇒ τ = π σ (shift τ)
@@ -229,8 +251,5 @@ module _ {A} where
     quoteᵏ : ∀ {n} -> Kripke n -> Term (suc n)
     quoteᵏ k = quoteᵛ (k top fresh)
 
-module _ where
-  open TermWith ⊥
-
-  quoteᵛ₀ : Value ∸> Term
-  quoteᵛ₀ = quoteᵛ
+quoteᵛ₀ : Value ∸> Pure
+quoteᵛ₀ = quoteᵛ

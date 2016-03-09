@@ -15,7 +15,7 @@ a : Term⁺
 a = A ∋ lam 4 λ A B f x → f · x
 
 ii : Term⁺
-ii = I ∋ lam 2 λ A x -> i · (A ⇒ A) · (i · A) · x
+ii = I ∋ lam 1 λ A → i · (A ⇒ A) · (i · A)
 
 ai : Term⁺
-ai = I ∋ lam 2 λ A x -> a · A · (ƛ A) · (i · A) · x
+ai = I ∋ lam 1 λ A → a · A · (ƛ A) · (i · A)

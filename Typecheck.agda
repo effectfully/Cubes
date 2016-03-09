@@ -77,7 +77,7 @@ mutual
     }
 
   _⟦_⟧ᵏ : ∀ {n σ} {Γ : Con n} -> Kripke n -> Γ ⊢ σ -> Value n
-  k ⟦ x ⟧ᵏ   = k [ eval x ]ᵏ
+  k ⟦ x ⟧ᵏ = k [ eval x ]ᵏ
 
   ⟦_⟧[_] : ∀ {n σ τ} {Γ : Con n} -> Γ ▻ σ ⊢ τ -> Value n -> Value n
   ⟦ b ⟧[ x ] = ⟦ stopᵉ ▷ x / b ⟧
@@ -87,50 +87,112 @@ mutual
 
 pattern _#⟨_,_⟩ᵗ_ p x₁ x₂ i = _#ᵗ_ {xₜ₁ = x₁} {xₜ₂ = x₂} p i
 
-coerceᵗ : ∀ {n σ τ} {Γ : Con n} -> Γ ⊢ σ -> Maybe (Γ ⊢ τ)
-coerceᵗ {σ = σ} {τ} t = flip qcoerceᵗ t <$> quoteᵛ₀ σ ≟ quoteᵛ₀ τ
+module _ {A} where
+  open TermWith A
+
+  erase : ∀ {n σ} {Γ : Con n} -> Γ ⊢ σ -> Term n
+  erase  intᵗ           = int
+  erase  typeᵗ          = type
+  erase (πᵗ σ τ)        = π (erase σ) (erase τ)
+  erase (pathᵗ σ x₁ x₂) = path (erase σ) (erase x₁) (erase x₂)
+  erase  lᵗ             = l
+  erase  rᵗ             = r
+  erase (varᵗ v)        = var v
+  erase (ƛᵗ b)          = ƛ (erase b)
+  erase (δᵗ x)          = δ (erase x)
+  erase (f ·ᵗ x)        = erase f · erase x
+  erase (p #ᵗ i)        = erase p # erase i
+  erase (coeᵗ σ j x)    = coe (erase σ) (erase j) (erase x)
+  erase (qcoerceᵗ q t)  = erase t
+  erase (wkᵗ t)         = wk₀ (erase t)
 
 Typed : Set
 Typed = ∃ λ (σ⁺ : Value⁺) -> ∀ {n} {Γ : Con n} -> Γ ⊢ σ⁺
 
 open TermWith Typed public
 
+data NonInferable : Set where
+  ƛₙᵢ δₙᵢ : NonInferable
+
+data TCError : Set where
+  mismatch     : ∀ {n} -> Pure n -> Pure n -> Term n -> TCError
+  nonInferable : NonInferable -> TCError
+  overapplied  : ∀ {n} -> Term n -> TCError
+  nonPath      : ∀ {n} -> Term n -> TCError
+
+instance
+  ⊢Show : ∀ {n σ} {Γ : Con n} -> Show (Γ ⊢ σ)
+  ⊢Show = record { show = show ∘ erase {⊥} }
+
+  typedShow : Show Typed
+  typedShow = record { show = λ p -> show (proj₂ p {Γ = ε}) }
+
+  nonInferableShow : Show NonInferable
+  nonInferableShow = record { show = λ{ ƛₙᵢ -> "ƛ" ; δₙᵢ -> "δ" } }
+
+  tcErrorShow : Show TCError
+  tcErrorShow = record
+    { show = λ
+        { (mismatch σᵢ σₑ t) ->  "the expected type of "
+                             s++ showCode t
+                             s++ " is "
+                             s++ showCode σᵢ
+                             s++ " but got "
+                             s++ showCode σₑ
+        ; (nonInferable ni)  -> "can't infer the type of " s++ show ni
+        ; (overapplied t)    -> showCode t s++ " is applied to too many arguments"
+        ; (nonPath t)        -> showCode t s++ " is not a path"
+        }
+    }
+
+TCM : Set -> Set
+TCM A = TCError ⊎ A
+
+throw : ∀ {A} -> TCError -> TCM A
+throw = inj₁
+
+coerceᵗ : ∀ {n σ τ} {Γ : Con n} -> Γ ⊢ σ -> TCM (Γ ⊢ τ)
+coerceᵗ {σ = σ} {τ} t =
+  maybeToSum (mismatch qσ qτ (erase t)) $ flip qcoerceᵗ t <$> qσ ≟ qτ where
+    qσ = quoteᵛ₀ σ
+    qτ = quoteᵛ₀ τ
+
 mutual
-  infer : ∀ {n} {Γ : Con n} -> Term n -> Maybe (∃ (Γ ⊢_))
-  infer (pure (, tₜ⁺)) = just (, tₜ⁺)
-  infer  int           = just (, intᵗ)
-  infer  type          = just (, typeᵗ)
+  infer : ∀ {n} {Γ : Con n} -> Term n -> TCM (∃ (Γ ⊢_))
+  infer (pure (, tₜ⁺)) = return (, tₜ⁺)
+  infer  int           = return (, intᵗ)
+  infer  type          = return (, typeᵗ)
   infer (π σ τ)        = check σ typeᵛ >>= λ σₜ -> (λ τₜ -> , πᵗ σₜ τₜ) <$> check τ typeᵛ
   infer (path σ x₁ x₂) = check σ typeᵛ >>= λ σₜ ->
     (λ xₜ₁ xₜ₂ -> , pathᵗ σₜ xₜ₁ xₜ₂) <$> check x₁ ⟦ σₜ ⟧[ lᵛ ] ⊛ check x₂ ⟦ σₜ ⟧[ rᵛ ]
-  infer  l             = just (, lᵗ)
-  infer  r             = just (, rᵗ)
-  infer (var v)        = just (, varᵗ v)
-  infer (ƛ b)          = nothing
-  infer (δ x)          = nothing
+  infer  l             = return (, lᵗ)
+  infer  r             = return (, rᵗ)
+  infer (var v)        = return (, varᵗ v)
+  infer (ƛ b)          = throw $ nonInferable ƛₙᵢ
+  infer (δ x)          = throw $ nonInferable δₙᵢ
   infer (f · x)        = infer f >>= λ
     { (piᵛ σ τₖ , fₜ) -> (λ xₜ -> , fₜ ·ᵗ xₜ) <$> check x σ
-    ;  _              -> nothing
+    ;  _              -> throw $ overapplied f
     }
   infer (p # i)        = infer p >>= λ
-    { (pathᵛ σₖ xᵥ₁ xᵥ₂ , pₜ) ->
-         check i intᵛ                    >>= λ iₜ  ->
-         check (quoteᵛ xᵥ₁) (σₖ [ lᵛ ]ᵏ) >>= λ xₜ₁ ->
-         check (quoteᵛ xᵥ₂) (σₖ [ rᵛ ]ᵏ) >>= λ xₜ₂ ->
+    { (pathᵛ σₖ x₁ x₂ , pₜ) ->
+         check i intᵛ                   >>= λ iₜ  ->
+         check (quoteᵛ x₁) (σₖ [ lᵛ ]ᵏ) >>= λ xₜ₁ ->
+         check (quoteᵛ x₂) (σₖ [ rᵛ ]ᵏ) >>= λ xₜ₂ ->
                (λ pₜ′ -> σₖ ⟦ iₜ ⟧ᵏ , pₜ′ #⟨ xₜ₁ , xₜ₂ ⟩ᵗ iₜ)
            <$>  coerceᵗ {τ = pathᵛ σₖ (eval xₜ₁) (eval xₜ₂)} pₜ
-    ;  _                      -> nothing
+    ;  _                    -> throw $ nonPath p
     }
   infer (coe σ j x)    =
     check σ typeᵛ >>= λ σₜ -> (λ jₜ xₜ -> , coeᵗ σₜ jₜ xₜ) <$> check j intᵛ ⊛ check x ⟦ σₜ ⟧[ lᵛ ]
 
-  check : ∀ {n} {Γ : Con n} -> Term n -> (σ : Value n) -> Maybe (Γ ⊢ σ)
+  check : ∀ {n} {Γ : Con n} -> Term n -> (σ : Value n) -> TCM (Γ ⊢ σ)
   check (ƛ b) (piᵛ σ τₖ)         = ƛᵗ <$> check b (instᵏ τₖ)
   check (δ x) (pathᵛ σₖ xᵥ₁ xᵥ₂) = check x (instᵏ σₖ) >>= λ xₜ -> coerceᵗ (δᵗ {σₖ = σₖ} xₜ)
   check  t     σ                 = infer t >>= coerceᵗ ∘ proj₂
 
-typecheck : Term⁽⁾ -> Value⁽⁾ -> Maybe Term⁺
+typecheck : Term⁽⁾ -> Value⁽⁾ -> TCM Term⁺
 typecheck t σ = (λ tₜ {_} -> pure $ wk₀ σ , wkᵗ tₜ) <$> check t σ 
 
 _∋_ : ∀ σ t -> _
-σ ∋ t = check {Γ = ε} σ typeᵛ >>=⊤ λ σₜ -> typecheck t (eval σₜ) >>=⊤ id
+σ ∋ t = check {Γ = ε} σ typeᵛ >>=ᵗ λ σₜ -> smap show id (typecheck t (eval σₜ)) >>=ᵗ id
