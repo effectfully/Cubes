@@ -33,9 +33,6 @@ Weakens Fam = ∀ {n m} -> Fam n -> Fam (n + m)
 Renames : (ℕ -> Set) -> Set
 Renames Fam = ∀ {n m} -> n ⊑ m -> Fam n -> Fam m
 
-Unrenames : (ℕ -> Set) -> Set
-Unrenames Fam = ∀ {n m} -> n ⊑ m -> Fam m -> Maybe (Fam n)
-
 module Kripke (Fam : ℕ -> Set) where
   infixl 8 _[_]ᵏ
   infixr 9 _∘ᵏ_
@@ -101,6 +98,9 @@ record Append (Fam : ℕ -> Set) {{context : Context Fam}} : Set where
   Δ ▻▻ (Γ ▻ σ) = Δ ▻▻ Γ ▻ wk σ
 open Append {{...}} public
 
+Unrenames : (ℕ -> Set) -> Set
+Unrenames Fam = ∀ {n m} -> n ⊑ m -> Fam m -> Maybe (Fam n)
+
 record Backwards (Fam : ℕ -> Set) : Set where
   field unren : Unrenames Fam
 
@@ -141,6 +141,21 @@ record Environment Fam {{context : Context Fam}} : Set where
   stopᵉ {0}     = ø
   stopᵉ {suc n} = keepᵉ stopᵉ
 open Environment {{...}} public
+
+Substitutes : (Fam₁ Fam₂ : ℕ -> Set)
+            -> {{context : Context Fam₂}}
+            -> {{environment : Environment Fam₂}}
+            -> Set
+Substitutes Fam₁ Fam₂ = ∀ {n m} -> _↤_ {Fam₂} m n -> Fam₁ n -> Fam₁ m
+
+record Substitution Fam {{context : Context Fam}} {{environment : Environment Fam}} : Set where
+  field sub : Substitutes Fam Fam
+
+  infixl 8 _[_]
+
+  _[_] : ∀ {n} -> Fam (suc n) -> Fam n -> Fam n
+  b [ t ] = sub (stopᵉ ▷ t) b
+open Substitution {{...}} public
 
 -- Agda doesn't pick these instances for some reason.
 -- module _ {Fam : ℕ -> Set} where

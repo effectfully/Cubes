@@ -11,7 +11,7 @@ open import Data.String.Base renaming (_++_ to _s++_) hiding (show) public
 open import Data.Maybe.Base hiding (map) public
 open import Data.Sum public renaming (map to smap)
 open import Data.Product renaming (map to pmap; zip to pzip) hiding (,_) public
-open import Data.List.Base public
+open import Data.List.Base hiding ([_]) public
 open import Data.Vec renaming (map to vmap) using (Vec; []; _∷_; lookup) public
 
 open import Level hiding (zero; suc)
@@ -107,6 +107,9 @@ s₁ |++| s₂ = s₁ |++ parens s₂
 
 generalize : ∀ {α β} {A : Set α} {x} -> (B : A -> Set β) -> B x -> ∃ λ x' -> B x' × x ≡ x'
 generalize B y = , y , refl
+
+left : ∀ {α β γ} {A : Set α} {B : Set β} {C : Set γ} -> (A -> C) -> A ⊎ B -> C ⊎ B
+left f = smap f id
 
 cong₃ : ∀ {α β γ δ} {A : Set α} {B : Set β} {C : Set γ} {D : Set δ} {x₁ x₂ y₁ y₂ z₁ z₂}
       -> (f : A -> B -> C -> D) -> x₁ ≡ x₂ -> y₁ ≡ y₂ -> z₁ ≡ z₂ -> f x₁ y₁ z₁ ≡ f x₂ y₂ z₂
