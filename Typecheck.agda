@@ -55,9 +55,9 @@ mutual
   ⟦ ρ / δᵗ x          ⟧ = dimᵛ ⟦ ρ / x ⟧ᵏ
   ⟦ ρ / f ·ᵗ x        ⟧ = ⟦ ρ / f ⟧ $ᵛ ⟦ ρ / x ⟧
   ⟦ ρ / p #ᵗ i        ⟧ = ⟦ ρ / p ⟧# ⟦ ρ / i ⟧
-  ⟦ ρ / coeᵗ τ j x    ⟧ = case ⟦j⟧ of λ
+  ⟦ ρ / coeᵗ τ j x    ⟧ = if isConstᵛ ⟦τ⟧ then ⟦x⟧ else case ⟦j⟧ of λ
     { lᵛ -> ⟦x⟧
-    ; _  -> if isConstᵛ ⟦τ⟧ then ⟦x⟧ else coeᵛ ⟦τ⟧ ⟦x⟧ ⟦j⟧
+    ; _  -> coeᵛ ⟦τ⟧ ⟦x⟧ ⟦j⟧
     } where ⟦τ⟧ = ⟦ ρ / τ ⟧
             ⟦x⟧ = ⟦ ρ / x ⟧
             ⟦j⟧ = ⟦ ρ / j ⟧
@@ -179,7 +179,7 @@ mutual
     }
   infer (p # i)        = infer p >>= λ
     { (pathᵛ τ x₁ x₂ , pₜ) ->
-         check i intᵛ                   >>= λ iₜ  ->
+         check i intᵛ                >>= λ iₜ  ->
          check (quoteᵛ x₁) (τ $ᵛ lᵛ) >>= λ xₜ₁ ->
          check (quoteᵛ x₂) (τ $ᵛ rᵛ) >>= λ xₜ₂ ->
                (λ pₜ′ -> τ $ᵛ eval iₜ , pₜ′ #⟨ xₜ₁ , xₜ₂ ⟩ᵗ iₜ)

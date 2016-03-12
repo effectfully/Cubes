@@ -106,6 +106,9 @@ record Backwards (Fam : ℕ -> Set) : Set where
 
   unshift : ∀ {n} -> Fam (suc n) -> Maybe (Fam n)
   unshift = unren top
+  
+  isUnshiftable : ∀ {n} -> Fam (suc n) -> Bool
+  isUnshiftable = is-just ∘ unshift
 open Backwards {{...}} public
 
 record Environment Fam {{context : Context Fam}} : Set where

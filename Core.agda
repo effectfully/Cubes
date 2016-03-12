@@ -44,7 +44,7 @@ instance
     go ι (dimᵛ xₖ)       = dimᵛ (renᵏ ι xₖ)
     go ι (f ·ᵛ x)        = go ι f ·ᵛ go ι x
     go ι (p #ᵛ i)        = go ι p #ᵛ go ι i
-    go ι (coeᵛ σ j x)    = coeᵛ (go ι σ) (go ι j) (go ι x)
+    go ι (coeᵛ τ j x)    = coeᵛ (go ι τ) (go ι j) (go ι x)
 
   valueAppend : Append Value
   valueAppend = record { wk = go } where
@@ -60,7 +60,7 @@ instance
     go (dimᵛ xₖ)       = dimᵛ (wkᵏ xₖ)
     go (f ·ᵛ x)        = go f ·ᵛ go x
     go (p #ᵛ i)        = go p #ᵛ go i
-    go (coeᵛ σ j x)    = coeᵛ (go σ) (go j) (go x)
+    go (coeᵛ τ j x)    = coeᵛ (go τ) (go j) (go x)
 
   valueEnvironment : Environment Value
   valueEnvironment = record { fresh = varᵛ fzero }
@@ -80,7 +80,7 @@ instance
       go ρ (dimᵛ xₖ)       = dimᵛ (goᵏ ρ xₖ)
       go ρ (f ·ᵛ x)        = go ρ f ·ᵛ go ρ x
       go ρ (p #ᵛ i)        = go ρ p #ᵛ go ρ i
-      go ρ (coeᵛ σ j x)    = coeᵛ (go ρ σ) (go ρ j) (go ρ x)
+      go ρ (coeᵛ τ j x)    = coeᵛ (go ρ τ) (go ρ j) (go ρ x)
 
       goᵏ : Substitutes Kripke Value
       goᵏ ρ k ι x = go (renᵉ ι ρ ▷ x) (instᵏ k)
@@ -151,7 +151,7 @@ module _ {A} where
       go (δ x)          = "δ" |++ go x
       go (f · x)        = go f |++| go x
       go (p # i)        = go p |++| go i
-      go (coe σ j x)    = "coe" |++ go σ |++ go j |++| go x 
+      go (coe τ j x)    = "coe" |++ go τ |++ go j |++| go x 
 
     termMEq : {{aMEq : MEq A}} -> Fam MEq Term
     termMEq = record { _≟_ = go } where
@@ -168,7 +168,7 @@ module _ {A} where
       go (δ x₁              ) (δ x₂              ) = cong δ_ <$> go x₁ x₂
       go (f₁ · x₁           ) (f₂ · x₂           ) = cong₂ _·_ <$> go f₁ f₂ ⊛ go x₁ x₂
       go (p₁ # i₁           ) (p₂ # i₂           ) = cong₂ _#_ <$> go p₁ p₂ ⊛ go i₁ i₂
-      go (coe σ₁ j₁ x₁      ) (coe σ₂ j₂ x₂      ) = cong₃ coe <$> go σ₁ σ₂ ⊛ go j₁ j₂ ⊛ go x₁ x₂
+      go (coe τ₁ j₁ x₁      ) (coe τ₂ j₂ x₂      ) = cong₃ coe <$> go τ₁ τ₂ ⊛ go j₁ j₂ ⊛ go x₁ x₂
       go  _                    _                   = nothing
 
     termContext : Context Term
@@ -186,7 +186,7 @@ module _ {A} where
       go ι (δ x)          = δ (go (keep ι) x)
       go ι (f · x)        = go ι f · go ι x
       go ι (p # i)        = go ι p # go ι i
-      go ι (coe σ j x)    = coe (go ι σ) (go ι j) (go ι x)
+      go ι (coe τ j x)    = coe (go ι τ) (go ι j) (go ι x)
 
     termAppend : Append Term
     termAppend = record { wk = go } where
@@ -203,7 +203,7 @@ module _ {A} where
       go (δ x)          = δ (go x)
       go (f · x)        = go f · go x
       go (p # i)        = go p # go i
-      go (coe σ j x)    = coe (go σ) (go j) (go x)
+      go (coe τ j x)    = coe (go τ) (go j) (go x)
 
     termBackwards : Backwards Term
     termBackwards = record { unren = go } where
@@ -220,16 +220,13 @@ module _ {A} where
       go ι (δ x)          = δ_ <$> go (keep ι) x
       go ι (f · x)        = _·_ <$> go ι f ⊛ go ι x
       go ι (p # i)        = _#_ <$> go ι p ⊛ go ι i
-      go ι (coe σ j x)    = coe <$> go ι σ ⊛ go ι j ⊛ go ι x
+      go ι (coe τ j x)    = coe <$> go ι τ ⊛ go ι j ⊛ go ι x
   
     termEnvironment : Environment Term
     termEnvironment = record { fresh = var fzero }
 
   _⇒_ : ∀ {n} -> Term n -> Term n -> Term n
   σ ⇒ τ = π σ (shift τ)
-
-  isShiftable : ∀ {n} -> Term (suc n) -> Bool
-  isShiftable = is-just ∘ unshift
 
   showCode : {{aShow : Show A}} -> Fam Shows Term
   showCode t = "`" s++ show t s++ "`"
@@ -242,11 +239,11 @@ module _ {A} where
   instᵇ {n} b = b (var (fromℕ⁻ n))
 
   pi : ∀ {n} -> Term n -> Bind n 1 -> Term n
-  pi {n} σ b = π σ (instᵇ b)
+  pi σ = π σ ∘ instᵇ
 
   lam : ∀ {n} m -> Bind n m -> Term n
-  lam      zero   b = b
-  lam {n} (suc m) b = ƛ (lam m (instᵇ b))
+  lam  0      b = b
+  lam (suc m) b = ƛ (lam m (instᵇ b))
 
   dim : ∀ {n} -> Bind n 1 -> Term n
   dim = δ_ ∘ instᵇ
@@ -276,18 +273,17 @@ module _ {A} where
     quoteᵛ (dimᵛ xₖ)       = ηδ (quoteᵏ xₖ)
     quoteᵛ (f ·ᵛ x)        = quoteᵛ f · quoteᵛ x
     quoteᵛ (p #ᵛ i)        = quoteᵛ p # quoteᵛ i
-    quoteᵛ (coeᵛ σ x j)    = coe (quoteᵛ σ) (quoteᵛ x) (quoteᵛ j)
+    quoteᵛ (coeᵛ τ x j)    = coe (quoteᵛ τ) (quoteᵛ x) (quoteᵛ j)
 
-    -- Expanding (quoteᵛ ∘ instᵏ) to satisfy the termination checker.
     quoteᵏ : ∀ {n} -> Kripke n -> Term (suc n)
-    quoteᵏ k = quoteᵛ (instᵏ k)
+    quoteᵏ = quoteᵛ ∘ instᵏ
 
 quoteᵛ₀ : Value ∸> Pure
 quoteᵛ₀ = quoteᵛ
 
-isShiftableᵛ : ∀ {n} -> Value (suc n) -> Bool
-isShiftableᵛ = isShiftable ∘ quoteᵛ₀
+isUnshiftableᵛ : ∀ {n} -> Value (suc n) -> Bool
+isUnshiftableᵛ = isUnshiftable ∘ quoteᵛ₀
 
 isConstᵛ : ∀ {n} -> Value n -> Bool
-isConstᵛ (lamᵛ b) = isShiftableᵛ (instᵏ b)
+isConstᵛ (lamᵛ b) = isUnshiftableᵛ (instᵏ b)
 isConstᵛ  _       = false
