@@ -39,14 +39,17 @@ li : Term⁺
 li = (pi int λ i → path int l i)
    ∋ lam 1 λ i → coe (lam 1 λ i → path int l i) i (idp · int · l)
 
+squeeze : ∀ {n} -> Term n -> Term n -> Term n
+squeeze i j = li · j # i
+
 psqueeze : Term⁺
 psqueeze = (pi type λ A
          → pi A λ x
          → pi A λ y
          → pi int λ i
          → pi (path A x y) λ p
-         → path A x (p # (li · r # i)))
-         ∋ lam 5 λ A x y i p → dim λ j → p # (li · j # i)
+         → path A x (p # squeeze i r))
+         ∋ lam 5 λ A x y i p → dim λ j → p # squeeze i j
 
 J : Term⁺
 J = (pi type λ A
@@ -57,4 +60,14 @@ J = (pi type λ A
   ⇒ pi (path A x y) λ p
   → B · y · p)
   ∋ lam 6 λ A x y B z p →
-      coe (lam 1 λ i → B · (p # (li · r # i)) · (psqueeze · A · x · y · i · p)) r z
+      coe (lam 1 λ i → B · (p # squeeze i r) · (psqueeze · A · x · y · i · p)) r z
+
+J-computes : Term⁺
+J-computes = (pi type λ A
+           → pi A λ x
+           → pi (pi A λ y → path A x y ⇒ type) λ B
+           → pi (B · x · (idp · A · x) ⇒ type) λ C
+           → pi (B · x · (idp · A · x)) λ z
+           → C · (J · A · x · x · B · z · (idp · A · x))
+           ⇒ C ·  z)
+           ∋ lam 6 λ A x B C z w → w
