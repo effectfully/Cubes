@@ -15,27 +15,28 @@ mutual
     πᵗ       :  (σₜ : Γ           ⊢ typeᵛ)
              ->       Γ ▻ eval σₜ ⊢ typeᵛ
              ->       Γ           ⊢ typeᵛ
-    pathᵗ    :  (σₜ : Γ ⊢ intᵛ ⇒ᵛ typeᵛ)
-             ->       Γ ⊢ eval σₜ $ᵛ lᵛ
-             ->       Γ ⊢ eval σₜ $ᵛ rᵛ
+    pathᵗ    :  (σₜ : Γ ⊢ typeᵛ)
+             ->       Γ ⊢ eval σₜ
+             ->       Γ ⊢ eval σₜ
              ->       Γ ⊢ typeᵛ
     lᵗ       : Γ ⊢ intᵛ
     rᵗ       : Γ ⊢ intᵛ
+    invᵗ     : Γ ⊢ intᵛ -> Γ ⊢ intᵛ
     varᵗ     : ∀ v -> Γ ⊢ lookupᶜ v Γ
     ƛᵗ       : ∀ {σ} {τₖ : Kripke n}
              -> Γ ▻ σ ⊢ instᵏ τₖ
              -> Γ     ⊢ piᵛ σ τₖ
     δᵗ       : ∀ {σ}
-             -> (xₜ : Γ ▻ intᵛ ⊢ σ)
-             ->       Γ        ⊢ pathᵛ (ƛᵛ σ) ⟦ xₜ ⟧[ lᵛ ] ⟦ xₜ ⟧[ rᵛ ]
+             -> (xₜ : Γ ▻ intᵛ ⊢ shift σ)
+             ->       Γ        ⊢ pathᵛ σ ⟦ xₜ ⟧[ lᵛ ] ⟦ xₜ ⟧[ rᵛ ]
     _·ᵗ_     : ∀ {σ} {τₖ : Kripke n}
              ->       Γ ⊢ piᵛ σ τₖ
              -> (xₜ : Γ ⊢ σ)
              ->       Γ ⊢ τₖ ⟦ xₜ ⟧ᵏ
-    _#ᵗ_     : ∀ {τ} {xₜ₁ : Γ ⊢ τ $ᵛ lᵛ} {xₜ₂ : Γ ⊢ τ $ᵛ rᵛ}
-             ->       Γ ⊢ pathᵛ τ (eval xₜ₁) (eval xₜ₂)
+    _#ᵗ_     : ∀ {σ} {xₜ₁ : Γ ⊢ σ} {xₜ₂ : Γ ⊢ σ}
+             ->       Γ ⊢ pathᵛ σ (eval xₜ₁) (eval xₜ₂)
              -> (iₜ : Γ ⊢ intᵛ)
-             ->       Γ ⊢ τ $ᵛ eval iₜ
+             ->       Γ ⊢ σ
     coeᵗ     :  (τₜ : Γ ⊢ intᵛ ⇒ᵛ typeᵛ)
              -> (jₜ : Γ ⊢ intᵛ)
              ->       Γ ⊢ eval τₜ $ᵛ lᵛ
@@ -47,20 +48,17 @@ mutual
   ⟦ ρ / intᵗ          ⟧ = intᵛ
   ⟦ ρ / typeᵗ         ⟧ = typeᵛ
   ⟦ ρ / πᵗ σ τ        ⟧ = piᵛ ⟦ ρ / σ ⟧ ⟦ ρ / τ ⟧ᵏ
-  ⟦ ρ / pathᵗ τ x₁ x₂ ⟧ = pathᵛ ⟦ ρ / τ ⟧ ⟦ ρ / x₁ ⟧ ⟦ ρ / x₂ ⟧
+  ⟦ ρ / pathᵗ σ x₁ x₂ ⟧ = pathᵛ ⟦ ρ / σ ⟧ ⟦ ρ / x₁ ⟧ ⟦ ρ / x₂ ⟧
   ⟦ ρ / lᵗ            ⟧ = lᵛ
   ⟦ ρ / rᵗ            ⟧ = rᵛ
+  ⟦ ρ / invᵗ i        ⟧ = invertᵛ ⟦ ρ / i ⟧
   ⟦ ρ / varᵗ v        ⟧ = lookupᵉ v ρ
   ⟦ ρ / ƛᵗ b          ⟧ = lamᵛ ⟦ ρ / b ⟧ᵏ
   ⟦ ρ / δᵗ x          ⟧ = dimᵛ ⟦ ρ / x ⟧ᵏ
   ⟦ ρ / f ·ᵗ x        ⟧ = ⟦ ρ / f ⟧ $ᵛ ⟦ ρ / x ⟧
   ⟦ ρ / p #ᵗ i        ⟧ = ⟦ ρ / p ⟧# ⟦ ρ / i ⟧
-  ⟦ ρ / coeᵗ τ j x    ⟧ = if isConstᵛ ⟦τ⟧ then ⟦x⟧ else case ⟦j⟧ of λ
-    { lᵛ -> ⟦x⟧
-    ; _  -> coeᵛ ⟦τ⟧ ⟦x⟧ ⟦j⟧
-    } where ⟦τ⟧ = ⟦ ρ / τ ⟧
-            ⟦x⟧ = ⟦ ρ / x ⟧
-            ⟦j⟧ = ⟦ ρ / j ⟧
+  ⟦ ρ / coeᵗ τ j x    ⟧ = let ⟦τ⟧ , ⟦x⟧ , ⟦j⟧ = ⟦ ρ / τ ⟧ , ⟦ ρ / x ⟧ , ⟦ ρ / j ⟧ in
+    if quoteᵛ ⟦j⟧ == Pure.l ∨ isConstᵛ ⟦τ⟧ then ⟦x⟧ else coeᵛ ⟦τ⟧ ⟦x⟧ ⟦j⟧
   ⟦ ρ / qcoerceᵗ q t  ⟧ = ⟦ ρ / t ⟧
   ⟦ ρ / wkᵗ t         ⟧ = wk₀ (eval t)
 
@@ -70,8 +68,8 @@ mutual
   eval : ∀ {n σ} {Γ : Con n} -> Γ ⊢ σ -> Value n
   eval = ⟦ stopᵉ /_⟧
 
-  ⟦_/_⟧#_ : ∀ {n m Γ τ} {xₜ₁ : Γ ⊢ τ $ᵛ lᵛ} {xₜ₂ : Γ ⊢ τ $ᵛ rᵛ}
-          -> m ↤ n -> Γ ⊢ pathᵛ τ (eval xₜ₁) (eval xₜ₂) -> Value m -> Value m
+  ⟦_/_⟧#_ : ∀ {n m Γ σ} {xₜ₁ : Γ ⊢ σ} {xₜ₂ : Γ ⊢ σ}
+          -> m ↤ n -> Γ ⊢ pathᵛ σ (eval xₜ₁) (eval xₜ₂) -> Value m -> Value m
   ⟦_/_⟧#_ {xₜ₁ = xₜ₁} ρ p lᵛ = ⟦ ρ / xₜ₁ ⟧
   ⟦_/_⟧#_ {xₜ₂ = xₜ₂} ρ p rᵛ = ⟦ ρ / xₜ₂ ⟧
   ⟦ ρ / p ⟧# iᵥ = case ⟦ ρ / p ⟧ of λ
@@ -100,6 +98,7 @@ module _ {A} where
   erase (pathᵗ σ x₁ x₂) = path (erase σ) (erase x₁) (erase x₂)
   erase  lᵗ             = l
   erase  rᵗ             = r
+  erase (invᵗ i)        = inv (erase i)
   erase (varᵗ v)        = var v
   erase (ƛᵗ b)          = ƛ (erase b)
   erase (δᵗ x)          = δ (erase x)
@@ -115,7 +114,7 @@ Typed = ∃ λ (σ⁺ : Value⁺) -> ∀ {n} {Γ : Con n} -> Γ ⊢ σ⁺
 open TermWith Typed public
 
 data NonInferable : Set where
-  ƛₙᵢ : NonInferable
+  ƛₙᵢ δₙᵢ : NonInferable
 
 data TCError : Set where
   mismatch     : ∀ {n} -> Pure n -> Pure n -> Term n -> TCError
@@ -131,7 +130,7 @@ instance
   typedShow = record { show = λ p -> show (proj₂ p {Γ = ε}) }
 
   nonInferableShow : Show NonInferable
-  nonInferableShow = record { show = λ{ ƛₙᵢ -> "ƛ" } }
+  nonInferableShow = record { show = λ{ ƛₙᵢ -> "ƛ" ; δₙᵢ -> "δ" } }
 
   tcErrorShow : Show TCError
   tcErrorShow = record
@@ -166,33 +165,32 @@ mutual
   infer  int           = return (, intᵗ)
   infer  type          = return (, typeᵗ)
   infer (π σ τ)        = check σ typeᵛ >>= λ σₜ -> (λ τₜ -> , πᵗ σₜ τₜ) <$> check τ typeᵛ
-  infer (path τ x₁ x₂) = check τ (intᵛ ⇒ᵛ typeᵛ) >>= λ τₜ ->
-    (λ xₜ₁ xₜ₂ -> , pathᵗ τₜ xₜ₁ xₜ₂) <$> check x₁ (eval τₜ $ᵛ lᵛ) ⊛ check x₂ (eval τₜ $ᵛ rᵛ)
+  infer (path σ x₁ x₂) = check σ typeᵛ >>= λ σₜ ->
+    (λ xₜ₁ xₜ₂ -> , pathᵗ σₜ xₜ₁ xₜ₂) <$> check x₁ (eval σₜ) ⊛ check x₂ (eval σₜ)
   infer  l             = return (, lᵗ)
   infer  r             = return (, rᵗ)
+  infer (inv i)        = (λ iₜ -> , invᵗ iₜ) <$> check i intᵛ
   infer (var v)        = return (, varᵗ v)
   infer (ƛ b)          = throw $ nonInferable ƛₙᵢ
-  infer (δ x)          = (uncurry λ σ xₜ -> , δᵗ xₜ) <$> infer x
+  infer (δ x)          = throw $ nonInferable δₙᵢ -- Well...
   infer (f · x)        = infer f >>= λ
     { (piᵛ σ τₖ , fₜ) -> (λ xₜ -> , fₜ ·ᵗ xₜ) <$> check x σ
     ;  _              -> throw $ nonFunction f
     }
   infer (p # i)        = infer p >>= λ
-    { (pathᵛ τ x₁ x₂ , pₜ) ->
-         check i intᵛ                >>= λ iₜ  ->
-         check (quoteᵛ x₁) (τ $ᵛ lᵛ) >>= λ xₜ₁ ->
-         check (quoteᵛ x₂) (τ $ᵛ rᵛ) >>= λ xₜ₂ ->
-               (λ pₜ′ -> τ $ᵛ eval iₜ , pₜ′ #⟨ xₜ₁ , xₜ₂ ⟩ᵗ iₜ)
-           <$>  coerceᵗ {τ = pathᵛ τ (eval xₜ₁) (eval xₜ₂)} pₜ
+    { (pathᵛ σ x₁ x₂ , pₜ) ->
+         check (quoteᵛ x₁) σ >>= λ xₜ₁ ->
+         check (quoteᵛ x₂) σ >>= λ xₜ₂ ->
+           (λ iₜ pₜ′ -> , pₜ′ #⟨ xₜ₁ , xₜ₂ ⟩ᵗ iₜ) <$> check i intᵛ ⊛ coerceᵗ pₜ
     ;  _                   -> throw $ nonPath p
     }
   infer (coe τ j x)    = check τ (intᵛ ⇒ᵛ typeᵛ) >>= λ τₜ ->
     (λ jₜ xₜ -> , coeᵗ τₜ jₜ xₜ) <$> check j intᵛ ⊛ check x (eval τₜ $ᵛ lᵛ)
 
   check : ∀ {n} {Γ : Con n} -> Term n -> (σ : Value n) -> TCM (Γ ⊢ σ)
-  check (ƛ b) (piᵛ σ τₖ)      = ƛᵗ <$> check b (instᵏ τₖ)
-  check (δ x) (pathᵛ τ x₁ x₂) = check x (shift τ $ᵛ fresh) >>= coerceᵗ ∘ δᵗ
-  check  t     σ              = infer t >>= coerceᵗ ∘ proj₂
+  check (ƛ b)   (piᵛ σ τₖ)      = ƛᵗ <$> check b (instᵏ τₖ)
+  check (δ x)   (pathᵛ σ x₁ x₂) = check x (shift σ) >>= coerceᵗ ∘ δᵗ
+  check  t       σ              = infer t >>= coerceᵗ ∘ proj₂
 
 typecheck : Term⁽⁾ -> Value⁽⁾ -> TCM Term⁺
 typecheck t σ = (λ tₜ {_} -> pure $ wk₀ σ , wkᵗ tₜ) <$> check t σ 

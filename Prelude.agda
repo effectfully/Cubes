@@ -70,7 +70,7 @@ MEquates : ∀ {α} -> Set α -> Set α
 MEquates A = (x y : A) -> Maybe (x ≡ y)
 
 record MEq {α} (A : Set α) : Set α where
-  infix 5 _≟_ _==_
+  infix 7 _≟_ _==_
   field _≟_ : MEquates A
 
   _==_ : A -> A -> Bool

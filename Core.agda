@@ -16,6 +16,7 @@ data Value n where
   piᵛ   : Value  n -> Kripke n -> Value n
   pathᵛ : Value  n -> Value  n -> Value n -> Value n
   lᵛ rᵛ : Value  n
+  invᵛ  : Value  n -> Value n
   varᵛ  : Fin    n -> Value  n
   lamᵛ  : Kripke n -> Value  n
   dimᵛ  : Kripke n -> Value  n
@@ -39,6 +40,7 @@ instance
     go ι (pathᵛ σ x₁ x₂) = pathᵛ (go ι σ) (go ι x₁) (go ι x₂)
     go ι  lᵛ             = lᵛ
     go ι  rᵛ             = rᵛ
+    go ι (invᵛ i)        = invᵛ (go ι i)
     go ι (varᵛ v)        = varᵛ (ren ι v)
     go ι (lamᵛ bₖ)       = lamᵛ (renᵏ ι bₖ)
     go ι (dimᵛ xₖ)       = dimᵛ (renᵏ ι xₖ)
@@ -56,6 +58,7 @@ instance
     go  lᵛ             = lᵛ
     go  rᵛ             = rᵛ
     go (varᵛ v)        = varᵛ (inject+ _ v)
+    go (invᵛ i)        = invᵛ (go i)
     go (lamᵛ bₖ)       = lamᵛ (wkᵏ bₖ)
     go (dimᵛ xₖ)       = dimᵛ (wkᵏ xₖ)
     go (f ·ᵛ x)        = go f ·ᵛ go x
@@ -75,6 +78,7 @@ instance
       go ρ (pathᵛ σ x₁ x₂) = pathᵛ (go ρ σ) (go ρ x₁) (go ρ x₂)
       go ρ  lᵛ             = lᵛ
       go ρ  rᵛ             = rᵛ
+      go ρ (invᵛ i)        = invᵛ (go ρ i)
       go ρ (varᵛ v)        = lookupᵉ v ρ
       go ρ (lamᵛ bₖ)       = lamᵛ (goᵏ ρ bₖ)
       go ρ (dimᵛ xₖ)       = dimᵛ (goᵏ ρ xₖ)
@@ -87,6 +91,12 @@ instance
 
 _⇒ᵛ_ : ∀ {n} -> Value n -> Value n -> Value n
 σ ⇒ᵛ τ = piᵛ σ (λ ι _ -> ren ι τ)
+
+invertᵛ : ∀ {n} -> Value n -> Value n
+invertᵛ  lᵛ      = rᵛ
+invertᵛ  rᵛ      = lᵛ
+invertᵛ (invᵛ i) = i
+invertᵛ  i       = invᵛ i
 
 _$ᵛ_ : ∀ {n} -> Value n -> Value n -> Value n
 lamᵛ k $ᵛ x = k [ x ]ᵏ
@@ -112,6 +122,7 @@ module TermWith A where
       π    : Type  n      -> Type (suc n) -> Type n
       path : Type  n      -> Term  n      -> Term n -> Type n
       l r  : Term  n
+      inv  : Term  n      -> Term  n
       var  : Fin   n      -> Term  n
       ƛ_   : Term (suc n) -> Term  n
       δ_   : Term (suc n) -> Term  n
@@ -146,6 +157,7 @@ module _ {A} where
       go (path σ x₁ x₂) = "path" |++ go σ |++ go x₁ |++| go x₂
       go  l             = "l"
       go  r             = "r"
+      go (inv i)        = "inv" |++| go i
       go (var v)        = "var" |++| show v
       go (ƛ b)          = "ƛ" |++ go b
       go (δ x)          = "δ" |++ go x
@@ -163,6 +175,7 @@ module _ {A} where
       go (path σ₁ x₁ y₁     ) (path σ₂ x₂ y₂     ) = cong₃ path <$> go σ₁ σ₂ ⊛ go x₁ x₂ ⊛ go y₁ y₂ 
       go (l                 ) (l                 ) = just refl
       go (r                 ) (r                 ) = just refl
+      go (inv i₁            ) (inv i₂            ) = cong inv <$> i₁ ≟ i₂
       go (var v₁            ) (var v₂            ) = cong var <$> v₁ ≟ v₂
       go (ƛ b₁              ) (ƛ b₂              ) = cong ƛ_ <$> go b₁ b₂
       go (δ x₁              ) (δ x₂              ) = cong δ_ <$> go x₁ x₂
@@ -181,6 +194,7 @@ module _ {A} where
       go ι (path σ x₁ x₂) = path (go ι σ) (go ι x₁) (go ι x₂)
       go ι  l             = l
       go ι  r             = r
+      go ι (inv i)        = inv (go ι i)
       go ι (var v)        = var (ren ι v)
       go ι (ƛ b)          = ƛ (go (keep ι) b)
       go ι (δ x)          = δ (go (keep ι) x)
@@ -198,6 +212,7 @@ module _ {A} where
       go (path σ x₁ x₂) = path (go σ) (go x₁) (go x₂)
       go  l             = l
       go  r             = r
+      go (inv i)        = inv (go i)
       go (var v)        = var (inject+ _ v)
       go (ƛ b)          = ƛ (go b)
       go (δ x)          = δ (go x)
@@ -215,6 +230,7 @@ module _ {A} where
       go ι (path σ x₁ x₂) = path <$> go ι σ ⊛ go ι x₁ ⊛ go ι x₂
       go ι  l             = just l
       go ι  r             = just r
+      go ι (inv i)        = inv <$> go ι i
       go ι (var v)        = var <$> unren ι v
       go ι (ƛ b)          = ƛ_ <$> go (keep ι) b
       go ι (δ x)          = δ_ <$> go (keep ι) x
@@ -268,6 +284,7 @@ module _ {A} where
     quoteᵛ (pathᵛ σ x₁ x₂) = path (quoteᵛ σ) (quoteᵛ x₁) (quoteᵛ x₂)
     quoteᵛ  lᵛ             = l
     quoteᵛ  rᵛ             = r
+    quoteᵛ (invᵛ i)        = inv (quoteᵛ i)
     quoteᵛ (varᵛ v)        = var v
     quoteᵛ (lamᵛ bₖ)       = ηƛ (quoteᵏ bₖ)
     quoteᵛ (dimᵛ xₖ)       = ηδ (quoteᵏ xₖ)
