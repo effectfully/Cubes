@@ -57,8 +57,7 @@ mutual
   ⟦ ρ / δᵗ x          ⟧ = dimᵛ ⟦ ρ / x ⟧ᵏ
   ⟦ ρ / f ·ᵗ x        ⟧ = ⟦ ρ / f ⟧ $ᵛ ⟦ ρ / x ⟧
   ⟦ ρ / p #ᵗ i        ⟧ = ⟦ ρ / p ⟧# ⟦ ρ / i ⟧
-  ⟦ ρ / coeᵗ τ j x    ⟧ = let ⟦τ⟧ , ⟦x⟧ , ⟦j⟧ = ⟦ ρ / τ ⟧ , ⟦ ρ / x ⟧ , ⟦ ρ / j ⟧ in
-    if quoteᵛ ⟦j⟧ == Pure.l ∨ isConstᵛ ⟦τ⟧ then ⟦x⟧ else coeᵛ ⟦τ⟧ ⟦x⟧ ⟦j⟧
+  ⟦ ρ / coeᵗ τ j x    ⟧ = coerceᵛ ⟦ ρ / τ ⟧ ⟦ ρ / j ⟧ ⟦ ρ / x ⟧
   ⟦ ρ / qcoerceᵗ q t  ⟧ = ⟦ ρ / t ⟧
   ⟦ ρ / wkᵗ t         ⟧ = wk₀ (eval t)
 

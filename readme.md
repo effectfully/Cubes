@@ -44,7 +44,7 @@ funExt = (pi type λ A
 
 `_∋_` returns either a `String` with an error or a typed term wrapped in `pure`.
 
-The definition of `J` is a simplified version of the definition in [1]: `psqueeze` returns `path A x (p # squeeze i r))` rather than `path A x (p # i)` and we don't need `squeeze i r ~> i` (which causes all the trouble) to hold to define `J`.
+The definition of `J` is a simplified version of the definition in [1]: `psqueeze` returns `path A x (p # squeeze i r))` rather than `path A x (p # i)` and we don't need `squeeze i r ~> i` to hold (which causes all the trouble) to define `J`.
 
 ```
 idp : Term⁺

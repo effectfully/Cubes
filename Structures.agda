@@ -1,6 +1,6 @@
 module Cubes.Structures where
 
-open import Cubes.Prelude public
+open import Cubes.Prelude
 
 infix 4 _⊑_
 
