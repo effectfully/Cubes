@@ -29,7 +29,7 @@ There is one another constructor of `Term`: `pure`. It's used to store typed ter
 
 To define terms we use higher-order syntax in the style of [5].
 
-Function extensionality is
+Functional extensionality is
 
 ```
 funExt : Term⁺
@@ -55,8 +55,8 @@ li : Term⁺
 li = (pi int λ i → path int l i)
    ∋ lam 1 λ i → coe (lam 1 λ i → path int l i) i (idp · int · l)
 
-squeeze : ∀ {n} -> Term n -> Term n -> Term n
-squeeze i j = li · j # i
+squeeze : Term⁺
+squeeze = (int ⇒ int ⇒ int) ∋ lam 2 λ i j → li · j # i
 
 psqueeze : Term⁺
 psqueeze = (pi type λ A
@@ -64,8 +64,8 @@ psqueeze = (pi type λ A
          → pi A λ y
          → pi int λ i
          → pi (path A x y) λ p
-         → path A x (p # squeeze i r))
-         ∋ lam 5 λ A x y i p → dim λ j → p # squeeze i j
+         → path A x (p # (squeeze · i · r)))
+         ∋ lam 5 λ A x y i p → dim λ j → p # (squeeze · i · j)
 
 J : Term⁺
 J = (pi type λ A
@@ -76,7 +76,7 @@ J = (pi type λ A
   ⇒ pi (path A x y) λ p
   → B · y · p)
   ∋ lam 6 λ A x y B z p →
-      coe (lam 1 λ i → B · (p # squeeze i r) · (psqueeze · A · x · y · i · p)) r z
+      coe (lam 1 λ i → B · (p # (squeeze · i · r)) · (psqueeze · A · x · y · i · p)) r z
 ```
 
 And `J` computes:
