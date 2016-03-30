@@ -70,26 +70,31 @@ instance
   valueEnvironment : Environment Value
   valueEnvironment = record { fresh = varᵛ fzero }
 
-  valueSubstitution : Substitution Value
-  valueSubstitution = record { sub = go } where
-    mutual
-      go : Substitutes Value Value
-      go ρ  intᵛ           = intᵛ
-      go ρ  typeᵛ          = typeᵛ
-      go ρ (piᵛ σ τₖ)      = piᵛ (go ρ σ) (goᵏ ρ τₖ)
-      go ρ (pathᵛ σ x₁ x₂) = pathᵛ (go ρ σ) (go ρ x₁) (go ρ x₂)
-      go ρ  lᵛ             = lᵛ
-      go ρ  rᵛ             = rᵛ
-      go ρ (invᵛ i)        = invᵛ (go ρ i)
-      go ρ (varᵛ v)        = lookupᵉ v ρ
-      go ρ (lamᵛ bₖ)       = lamᵛ (goᵏ ρ bₖ)
-      go ρ (dimᵛ xₖ)       = dimᵛ (goᵏ ρ xₖ)
-      go ρ (f ·ᵛ x)        = go ρ f ·ᵛ go ρ x
-      go ρ (p #ᵛ i)        = go ρ p #ᵛ go ρ i
-      go ρ (coeᵛ τ j x)    = coeᵛ (go ρ τ) (go ρ j) (go ρ x)
+     -- Substitution must be normalizing. But it can't be, because of the _#ᵛ_ case,
+     -- which needs types in order to compute. But substitution is not used anywhere anyway.
+--   valueSubstitution : Substitution Value
+--   valueSubstitution = record { sub = go } where
+--     mutual
+--       go : Substitutes Value Value
+--       go ρ  intᵛ           = intᵛ
+--       go ρ  typeᵛ          = typeᵛ
+--       go ρ (piᵛ σ τₖ)      = piᵛ (go ρ σ) (goᵏ ρ τₖ)
+--       go ρ (pathᵛ σ x₁ x₂) = pathᵛ (go ρ σ) (go ρ x₁) (go ρ x₂)
+--       go ρ  lᵛ             = lᵛ
+--       go ρ  rᵛ             = rᵛ
+--       go ρ (invᵛ i)        = invᵛ (go ρ i)
+--       go ρ (varᵛ v)        = lookupᵉ v ρ
+--       go ρ (lamᵛ bₖ)       = lamᵛ (goᵏ ρ bₖ)
+--       go ρ (dimᵛ xₖ)       = dimᵛ (goᵏ ρ xₖ)
+--       go ρ (f ·ᵛ x)        = go ρ f ·ᵛ go ρ x
+--       go ρ (p #ᵛ i)        = go ρ p #ᵛ go ρ i
+--       go ρ (coeᵛ τ j x)    = coeᵛ (go ρ τ) (go ρ j) (go ρ x)
 
-      goᵏ : Substitutes Kripke Value
-      goᵏ ρ k ι x = go (renᵉ ι ρ ▷ x) (instᵏ k)
+--       goᵏ : Substitutes Kripke Value
+--       goᵏ ρ k ι x = go (renᵉ ι ρ ▷ x) (instᵏ k)
+
+-- ƛᵛ : ∀ {n} -> Value (suc n) -> Value n
+-- ƛᵛ = lamᵛ ∘ abstᵏ
 
 _⇒ᵛ_ : ∀ {n} -> Value n -> Value n -> Value n
 σ ⇒ᵛ τ = piᵛ σ (λ ι _ -> ren ι τ)
@@ -103,12 +108,6 @@ invertᵛ  i       = invᵛ i
 _$ᵛ_ : ∀ {n} -> Value n -> Value n -> Value n
 lamᵛ k $ᵛ x = k [ x ]ᵏ
 f      $ᵛ x = f ·ᵛ x
-
-abstᵏ : ∀ {n} -> Value (suc n) -> Kripke n
-abstᵏ b ι x = ren (keep ι) b [ x ]
-
-ƛᵛ : ∀ {n} -> Value (suc n) -> Value n
-ƛᵛ = lamᵛ ∘ abstᵏ
 
 module _ {A} where
   open TermWith A

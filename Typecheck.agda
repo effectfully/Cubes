@@ -187,9 +187,9 @@ mutual
     (λ jₜ xₜ -> , coeᵗ τₜ jₜ xₜ) <$> check j intᵛ ⊛ check x (eval τₜ $ᵛ lᵛ)
 
   check : ∀ {n} {Γ : Con n} -> Term n -> (σ : Value n) -> TCM (Γ ⊢ σ)
-  check (ƛ b)   (piᵛ σ τₖ)      = ƛᵗ <$> check b (instᵏ τₖ)
-  check (δ x)   (pathᵛ σ x₁ x₂) = check x (shift σ) >>= coerceᵗ ∘ δᵗ
-  check  t       σ              = infer t >>= coerceᵗ ∘ proj₂
+  check (ƛ b) (piᵛ σ τₖ)      = ƛᵗ <$> check b (instᵏ τₖ)
+  check (δ x) (pathᵛ σ x₁ x₂) = check x (shift σ) >>= coerceᵗ ∘ δᵗ
+  check  t     σ              = infer t >>= coerceᵗ ∘ proj₂
 
 typecheck : Term⁽⁾ -> Value⁽⁾ -> TCM Term⁺
 typecheck t σ = (λ tₜ {_} -> pure $ wk₀ σ , wkᵗ tₜ) <$> check t σ 

@@ -154,10 +154,15 @@ Substitutes Fam₁ Fam₂ = ∀ {n m} -> _↤_ {Fam₂} m n -> Fam₁ n -> Fam�
 record Substitution Fam {{context : Context Fam}} {{environment : Environment Fam}} : Set where
   field sub : Substitutes Fam Fam
 
+  open Kripke Fam
+
   infixl 8 _[_]
 
   _[_] : ∀ {n} -> Fam (suc n) -> Fam n -> Fam n
   b [ t ] = sub (stopᵉ ▷ t) b
+  
+  abstᵏ : ∀ {n} -> Fam (suc n) -> Kripke n
+  abstᵏ b ι x = ren (keep ι) b [ x ]
 open Substitution {{...}} public
 
 -- Agda doesn't pick these instances for some reason.
