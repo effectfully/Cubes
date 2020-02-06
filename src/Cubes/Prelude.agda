@@ -1,18 +1,18 @@
 module Cubes.Prelude where
 
-open import Function hiding (_∋_) public
-open import Relation.Binary.PropositionalEquality hiding ([_]) public
-open import Data.Empty public
-open import Data.Unit.Base using (⊤; tt) public
-open import Data.Bool.Base hiding (_≟_) public
-open import Data.Nat.Base  hiding (_≟_; _⊔_; erase) public
-open import Data.Fin renaming (zero to fzero; suc to fsuc) using (Fin; toℕ; inject+) public
-open import Data.String.Base renaming (_++_ to _s++_) hiding (show) public
-open import Data.Maybe.Base hiding (map) public
-open import Data.Sum public renaming (map to smap)
-open import Data.Product renaming (map to pmap; zip to pzip) hiding (,_) public
-open import Data.List.Base hiding ([_]) public
-open import Data.Vec renaming (map to vmap) using (Vec; []; _∷_; lookup) public
+open import Function         using (_$_; _∘_; const; flip; id; case_of_) public
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂) public
+open import Data.Empty       using (⊥; ⊥-elim) public
+open import Data.Unit.Base   using (⊤; tt) public
+open import Data.Bool.Base   using (Bool; true; false; if_then_else_; not; _∧_; _∨_) public
+open import Data.Nat.Base    using (ℕ; zero; suc; _+_) public
+open import Data.Fin         using (Fin; toℕ; inject+) renaming (zero to fzero; suc to fsuc) public
+open import Data.String.Base using (String; toList) renaming (_++_ to _s++_) public
+open import Data.Maybe.Base  using (Maybe; nothing; just; maybe′; is-just; decToMaybe) public
+open import Data.Sum         using (_⊎_; inj₁; inj₂; [_,_]′) renaming (map to smap) public
+open import Data.Product     using (Σ; ∃; _×_; _,_; proj₁; proj₂) public
+open import Data.List.Base   using (List; foldr; map; any; intersperse) public
+open import Data.Vec         using (Vec; []; _∷_; lookup) renaming (map to vmap) public
 
 open import Level hiding (zero; suc)
 open import Data.Char as Char using (Char)
@@ -55,7 +55,10 @@ instance
   finShow = record { show = show ∘ toℕ }
 
   maybeMonad : ∀ {α} -> RawMonad {α} Maybe
-  maybeMonad = Maybe.monad
+  maybeMonad = record
+    { return = just
+    ; _>>=_  = Maybe._>>=_
+    }
 
   sumMonad : ∀ {α β} {A : Set α} -> RawMonad {α ⊔ β} (A ⊎_)
   sumMonad = record
